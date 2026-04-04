@@ -4,6 +4,15 @@ import { useState } from 'react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+type ResultadosType = {
+  sumaFactores: number;
+  cotizacionLegalUF: number;
+  planActualCostoUF: number | null;
+  mejorOpcionGeneral: any;
+  mejorOpcionConClinica: any;
+  topEconomicos: any[];
+};
+
 export default function Home() {
   const agenteNombre = "Angélica Peñailillo";
   const agenteTelefono = "+56944088450";
@@ -18,7 +27,7 @@ export default function Home() {
   const [planActualNombre, setPlanActualNombre] = useState('');
   const [planActualCostoUF, setPlanActualCostoUF] = useState('');
   const [planActualPDF, setPlanActualPDF] = useState('');
-  const [resultados, setResultados] = useState(null);
+  const [resultados, setResultados] = useState<ResultadosType | null>(null);
   const [cargando, setCargando] = useState(false);
   const [clienteNombre, setClienteNombre] = useState('');
   const [clienteEmail, setClienteEmail] = useState('');
@@ -86,7 +95,7 @@ export default function Home() {
     
     doc.text(`Edad Titular: ${titularEdad} años`, 14, y); y += 5;
     doc.text(`Cargas: ${cargas.filter(c => c && c !== '').join(', ') || 'Ninguna'} años`, 14, y); y += 5;
-    doc.text(`Suma de factores: ${resultados.sumaFactores || 'N/A'}`, 14, y); y += 5;
+    doc.text(`Suma de factores: ${resultados.sumaFactores || 0}`, 14, y); y += 5;
     doc.text(`Renta imponible: ${formatearPesos(parseFloat(renta) || 0)}`, 14, y); y += 5;
     doc.text(`Cotización legal 7%: ${formatearPesos((parseFloat(renta) || 0) * 0.07)}`, 14, y); y += 5;
     doc.text(`Región: ${region === 'metropolitana' ? 'Metropolitana' : 'Regiones'}`, 14, y); y += 5;
