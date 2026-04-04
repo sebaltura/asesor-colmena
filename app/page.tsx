@@ -86,7 +86,7 @@ export default function Home() {
     
     doc.text(`Edad Titular: ${titularEdad} años`, 14, y); y += 5;
     doc.text(`Cargas: ${cargas.filter(c => c && c !== '').join(', ') || 'Ninguna'} años`, 14, y); y += 5;
-    doc.text(`Suma de factores: ${resultados?.sumaFactores || 'N/A'}`, 14, y); y += 5;
+    doc.text(`Suma de factores: ${resultados.sumaFactores || 'N/A'}`, 14, y); y += 5;
     doc.text(`Renta imponible: ${formatearPesos(parseFloat(renta) || 0)}`, 14, y); y += 5;
     doc.text(`Cotización legal 7%: ${formatearPesos((parseFloat(renta) || 0) * 0.07)}`, 14, y); y += 5;
     doc.text(`Región: ${region === 'metropolitana' ? 'Metropolitana' : 'Regiones'}`, 14, y); y += 5;
