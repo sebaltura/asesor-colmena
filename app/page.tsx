@@ -192,7 +192,6 @@ export default function Home() {
       recY = 20;
     }
     
-    // ========== RECOMENDACIÓN CON NEGRITA Y AHORRO MÁS GRANDE ==========
     if (clinicaPreferida && resultados.mejorOpcionConClinica) {
       doc.setFontSize(11);
       doc.setTextColor(34, 139, 34);
@@ -445,7 +444,7 @@ export default function Home() {
                 </div>
               </div>
               
-              <button onClick={cotizar} disabled={cargando} className="w-full bg-[#003366] text-white py-3 rounded-xl font-semibold hover:bg-[#002244] transition shadow-md">
+              <button onClick={cotizar} disabled={cargando} className="w-full bg-white text-[#003366] border-2 border-[#003366] py-3 rounded-xl font-semibold hover:bg-gray-50 transition shadow-md">
                 {cargando ? '🔍 Analizando planes...' : '🚀 Comparar Planes Colmena'}
               </button>
             </div>
