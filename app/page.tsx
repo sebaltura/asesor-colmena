@@ -192,17 +192,28 @@ export default function Home() {
       recY = 20;
     }
     
+    // ========== RECOMENDACIÓN CON NEGRITA Y AHORRO MÁS GRANDE ==========
     if (clinicaPreferida && resultados.mejorOpcionConClinica) {
       doc.setFontSize(11);
       doc.setTextColor(34, 139, 34);
+      doc.setFont('helvetica', 'bold');
       doc.text(`RECOMENDACIÓN PARA ${clinicaPreferida.toUpperCase()}`, 14, recY);
       recY += 8;
       
       doc.setFontSize(9);
       doc.setTextColor(60, 60, 60);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Te recomendamos cotizar ${resultados.mejorOpcionConClinica.nombre}`, 14, recY); recY += 6;
       doc.text(`✅ Incluye ${clinicaPreferida} en red preferente`, 14, recY); recY += 6;
-      doc.text(`Ahorro potencial: ${resultados.mejorOpcionConClinica.ahorroUF.toFixed(2)} UF/mes`, 14, recY); recY += 6;
+      
+      doc.setFontSize(14);
+      doc.setTextColor(34, 139, 34);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Ahorro potencial: ${resultados.mejorOpcionConClinica.ahorroUF.toFixed(2)} UF/mes`, 14, recY); recY += 8;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Cobertura Hospitalaria: ${resultados.mejorOpcionConClinica.coberturaHospitalaria || 'N/A'}`, 14, recY); recY += 5;
       doc.text(`Cobertura Ambulatoria: ${resultados.mejorOpcionConClinica.coberturaAmbulatoria || 'N/A'}`, 14, recY); recY += 5;
       doc.text(`Cobertura Urgencia: ${resultados.mejorOpcionConClinica.coberturaUrgencia || 'N/A'}`, 14, recY); recY += 5;
@@ -211,13 +222,23 @@ export default function Home() {
     } else if (resultados.mejorOpcionGeneral) {
       doc.setFontSize(11);
       doc.setTextColor(34, 139, 34);
+      doc.setFont('helvetica', 'bold');
       doc.text('RECOMENDACIÓN (MEJOR PRECIO)', 14, recY);
       recY += 8;
       
       doc.setFontSize(9);
       doc.setTextColor(60, 60, 60);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Te recomendamos cotizar ${resultados.mejorOpcionGeneral.nombre}`, 14, recY); recY += 6;
-      doc.text(`Ahorro potencial: ${resultados.mejorOpcionGeneral.ahorroUF.toFixed(2)} UF/mes`, 14, recY); recY += 6;
+      
+      doc.setFontSize(14);
+      doc.setTextColor(34, 139, 34);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Ahorro potencial: ${resultados.mejorOpcionGeneral.ahorroUF.toFixed(2)} UF/mes`, 14, recY); recY += 8;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      doc.setFont('helvetica', 'normal');
       doc.text(`Cobertura Hospitalaria: ${resultados.mejorOpcionGeneral.coberturaHospitalaria || 'N/A'}`, 14, recY); recY += 5;
       doc.text(`Cobertura Ambulatoria: ${resultados.mejorOpcionGeneral.coberturaAmbulatoria || 'N/A'}`, 14, recY); recY += 5;
       doc.text(`Cobertura Urgencia: ${resultados.mejorOpcionGeneral.coberturaUrgencia || 'N/A'}`, 14, recY); recY += 5;
