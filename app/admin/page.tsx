@@ -2,11 +2,21 @@
 
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminPage() {
   const [mensaje, setMensaje] = useState('');
   const [subiendo, setSubiendo] = useState(false);
   const [planesCargados, setPlanesCargados] = useState(0);
+
+  const extraerCobertura = (nombre: string): string => {
+    const match = nombre.match(/(\d{2})(\d{2})$/);
+    if (match && match[2]) {
+      const porcentaje = parseInt(match[2]);
+      return `${porcentaje}%`;
+    }
+    return '80%';
+  };
 
   const procesarExcel = async (file: File) => {
     setSubiendo(true);
@@ -15,10 +25,9 @@ export default function AdminPage() {
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
-      
       const sheetName = workbook.SheetNames.find(name => name === 'RM');
       if (!sheetName) {
-        setMensaje(`❌ No se encontró la hoja "RM"`);
+        setMensaje('❌ No se encontró la hoja "RM"');
         setSubiendo(false);
         return;
       }
@@ -47,6 +56,7 @@ export default function AdminPage() {
         
         const precioIndividual = parseFloat(row[4]);
         const precioGrupal = parseFloat(row[7]);
+        const cobertura = extraerCobertura(nombrePlan);
         
         if (precioIndividual > 0) {
           planes.push({
@@ -54,13 +64,14 @@ export default function AdminPage() {
             isapre: 'Colmena',
             precio_base: precioIndividual,
             tipo: 'PF',
-            region: 'todas',
+            region: 'metropolitana',
             cobertura_parto: 'parcial',
             tope_anual: parseFloat(row[24]) || 0,
             cobertura_hospitalaria: '100%',
-            cobertura_ambulatoria: '80%',
-            cobertura_urgencia: 'Consulta: 80%',
-            clinicas: ['Hospital del Profesor', 'Clínica Dávila', 'Clínica RedSalud', 'Clínica Bupa']
+            cobertura_ambulatoria: cobertura,
+            cobertura_urgencia: `Consulta: ${cobertura}`,
+            clinicas: ['Hospital del Profesor', 'Clínica Dávila', 'Clínica RedSalud', 'Clínica Bupa'],
+            activo: true
           });
         }
         
@@ -70,20 +81,27 @@ export default function AdminPage() {
             isapre: 'Colmena',
             precio_base: precioGrupal,
             tipo: 'Grupal',
-            region: 'todas',
+            region: 'metropolitana',
             cobertura_parto: 'parcial',
             tope_anual: parseFloat(row[24]) || 0,
             cobertura_hospitalaria: '100%',
-            cobertura_ambulatoria: '80%',
-            cobertura_urgencia: 'Consulta: 80%',
-            clinicas: ['Hospital del Profesor', 'Clínica Dávila', 'Clínica RedSalud', 'Clínica Bupa']
+            cobertura_ambulatoria: cobertura,
+            cobertura_urgencia: `Consulta: ${cobertura}`,
+            clinicas: ['Hospital del Profesor', 'Clínica Dávila', 'Clínica RedSalud', 'Clínica Bupa'],
+            activo: true
           });
         }
       }
       
-      localStorage.setItem('planesColmena', JSON.stringify(planes));
-      setPlanesCargados(planes.length);
-      setMensaje(`✅ ${planes.length} planes cargados correctamente`);
+      if (planes.length > 0) {
+        await supabase.from('planes').update({ activo: false }).eq('isapre', 'Colmena');
+        const { error } = await supabase.from('planes').insert(planes);
+        if (error) throw error;
+        setPlanesCargados(planes.length);
+        setMensaje(`✅ ${planes.length} planes guardados en la nube`);
+      } else {
+        setMensaje('⚠️ No se encontraron planes en el archivo');
+      }
       
     } catch (error) {
       console.error(error);
@@ -143,7 +161,7 @@ export default function AdminPage() {
 
           {planesCargados > 0 && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
-              📊 {planesCargados} planes disponibles para comparar
+              📊 {planesCargados} planes guardados en la nube
             </div>
           )}
         </div>
