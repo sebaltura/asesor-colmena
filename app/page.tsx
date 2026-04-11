@@ -67,7 +67,7 @@ export default function Home() {
     const presupuestoValido = resultados.planActualCostoUF > 0;
     
     doc.setFontSize(20);
-    doc.setTextColor(30, 41, 59); // Slate-800
+    doc.setTextColor(30, 41, 59); 
     doc.text('ASESOR COLMENA', 105, 20, { align: 'center' });
     
     doc.setFontSize(10);
@@ -80,7 +80,7 @@ export default function Home() {
     doc.text(`Fecha: ${fecha}`, 14, 45);
     doc.text(`Hora: ${new Date().toLocaleTimeString('es-CL')}`, 14, 50);
     
-    doc.setDrawColor(34, 211, 238); // Cyan-400
+    doc.setDrawColor(34, 211, 238); 
     doc.line(14, 55, 200, 55);
     
     doc.setFontSize(12);
@@ -139,6 +139,7 @@ export default function Home() {
         plan.tipo === 'PF' ? 'Ind' : plan.tipo === 'Grupal' ? 'Grp' : 'LE',
         `${plan.costoUF.toFixed(2)}`,
         plan.cobertura_hospitalaria?.substring(0, 18) || 'Ver det.',
+        plan.cobertura_ambulatoria?.substring(0, 18) || 'Ver det.',
         plan.incluyeClinicaPreferida ? 'SI' : 'NO'
       ];
 
@@ -150,30 +151,34 @@ export default function Home() {
       return row;
     });
     
+    // NUEVO: Se agregaron Hospitalizacion y Ambulatorio de manera separada
     const headRow = presupuestoValido 
-      ? [['Plan propuesto', 'Tipo', 'Costo UF', 'Ahorro UF', 'Hospitalizacion', 'En Red?']]
-      : [['Plan propuesto', 'Tipo', 'Costo UF', 'Hospitalizacion', 'En Red?']];
+      ? [['Plan propuesto', 'Tipo', 'Costo UF', 'Ahorro UF', 'Hospitalizacion', 'Ambulatorio', 'En Red?']]
+      : [['Plan propuesto', 'Tipo', 'Costo UF', 'Hospitalizacion', 'Ambulatorio', 'En Red?']];
 
+    // Ajuste milimétrico de celdas para que quepan ambas columnas en el PDF
     autoTable(doc, {
       startY: y + 5,
       head: headRow,
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], halign: 'center' }, // Slate-900
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], halign: 'center' }, 
       styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
       columnStyles: presupuestoValido ? {
-        0: { cellWidth: 55 },
-        1: { cellWidth: 10, halign: 'center' },
+        0: { cellWidth: 42 },
+        1: { cellWidth: 9, halign: 'center' },
         2: { cellWidth: 15, halign: 'right' },
-        3: { cellWidth: 15, halign: 'right', textColor: [34, 139, 34] },
-        4: { cellWidth: 45, halign: 'left' },
-        5: { cellWidth: 15, halign: 'center' }
+        3: { cellWidth: 14, halign: 'right', textColor: [34, 139, 34] },
+        4: { cellWidth: 35, halign: 'left' },
+        5: { cellWidth: 35, halign: 'left' },
+        6: { cellWidth: 14, halign: 'center' }
       } : {
-        0: { cellWidth: 65 },
-        1: { cellWidth: 15, halign: 'center' },
-        2: { cellWidth: 20, halign: 'right' },
+        0: { cellWidth: 45 },
+        1: { cellWidth: 12, halign: 'center' },
+        2: { cellWidth: 18, halign: 'right' },
         3: { cellWidth: 40, halign: 'left' },
-        4: { cellWidth: 15, halign: 'center' }
+        4: { cellWidth: 40, halign: 'left' },
+        5: { cellWidth: 14, halign: 'center' }
       }
     });
     
@@ -344,9 +349,7 @@ export default function Home() {
   const hayPresupuesto = resultados && resultados.planActualCostoUF > 0;
 
   return (
-    // CAMBIO FONDO: Gris ultra claro sofisticado
     <div className="min-h-screen bg-slate-50">
-      {/* CAMBIO HEADER: Slate profundo con acento Cian */}
       <header className="bg-slate-900 shadow-xl border-b-2 border-cyan-400">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
@@ -354,7 +357,6 @@ export default function Home() {
               <h1 className="text-3xl font-black text-white tracking-tighter">Asesor<span className="text-cyan-400">Colmena</span><span className="text-amber-400 text-sm font-light ml-1">v.Pro</span></h1>
               <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest">Herramienta de Cierre de Alto Valor</p>
             </div>
-            {/* CAMBIO BOTÓN ADMIN: Elegante, borde, efecto hover sutil */}
             <a href="/admin" className="flex items-center gap-2 border border-slate-700 text-slate-300 px-5 py-2.5 rounded-full text-xs font-semibold hover:border-cyan-400 hover:text-cyan-400 transition-all shadow">
               <span>🔧</span>
               Panel de Control
@@ -366,7 +368,6 @@ export default function Home() {
       <div className="max-w-7xl mx-auto p-6 md:p-8">
         <div className="grid lg:grid-cols-[1fr,1.3fr] gap-8">
           
-          {/* COLUMNA IZQUIERDA: FORMULARIO ESTILIZADO */}
           <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-8">
             <div className="flex items-center gap-3 mb-6 pb-3 border-b border-slate-100">
               <span className="text-3xl">📋</span>
@@ -377,8 +378,6 @@ export default function Home() {
             </div>
             
             <div className="space-y-6">
-              
-              {/* Bloque Contacto */}
               <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 shadow-inner">
                 <p className="text-sm font-bold text-slate-800 mb-4 tracking-tight flex items-center gap-2"><span className="text-cyan-500">📞</span> Datos de Contacto</p>
                 <div className="grid md:grid-cols-2 gap-4">
@@ -388,7 +387,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Bloque Edades */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Edad del Titular *</label>
@@ -416,14 +414,12 @@ export default function Home() {
                 </div>
               </div>
               
-              {/* Bloque Renta */}
               <div>
                 <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Renta Imponible ($) *</label>
                 <input type="number" value={renta} onChange={(e) => setRenta(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" />
                 <p className="text-xs text-slate-500 mt-2 font-mono bg-slate-100 p-2 rounded-lg inline-block">7% Legal = {formatearPesos(parseFloat(renta) * 0.07 || 0)}</p>
               </div>
 
-              {/* Bloque Filtros */}
               <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Región *</label>
@@ -468,7 +464,6 @@ export default function Home() {
                 </div>
               </label>
 
-              {/* Bloque Presupuesto Actual Estilizado */}
               <div className="border-t border-slate-100 pt-6">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-2xl">💰</span>
@@ -499,7 +494,6 @@ export default function Home() {
                 </div>
               </div>
               
-              {/* CAMBIO BOTÓN COTIZAR: Degradado Premium, sombra, texto bold */}
               <button 
                 onClick={cotizar} 
                 disabled={cargando} 
@@ -514,7 +508,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* COLUMNA DERECHA: RESULTADOS GAMA ALTA */}
           <div className="space-y-6">
             
             {cargando && (
@@ -527,7 +520,6 @@ export default function Home() {
 
             {resultados && !cargando && (
               <>
-                {/* Resumen Superior Eléctrico */}
                 <div className="bg-slate-900 text-white rounded-3xl shadow-xl p-6 border border-slate-700 shadow-cyan-900/10">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-extrabold tracking-tight flex items-center gap-2"><span className="text-cyan-400 text-sm">●</span> Resumen Operativo</h3>
@@ -546,7 +538,6 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Recomendación Clínica (Premium Amber/Oro) */}
                 {clinicaPreferida && resultados.mejorOpcionConClinica && (
                   <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-3xl shadow-xl p-7 border-4 border-amber-400 shadow-amber-900/20 relative overflow-hidden">
                     <div className="absolute -right-10 -top-10 text-[180px] opacity-10 rotate-12">🌟</div>
@@ -574,9 +565,7 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Tabla de Resultados Elegante */}
                 <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
-                  {/* CAMBIO CABECERA TABLA: Degradado suave sofisticado */}
                   <div className="bg-slate-900 bg-gradient-to-r from-slate-950 to-slate-900 px-6 py-5 flex justify-between items-center border-b border-slate-800">
                     <div>
                       <h3 className="font-black text-white text-xl tracking-tighter">Propuestas de Valor</h3>
@@ -584,7 +573,6 @@ export default function Home() {
                         {hayPresupuesto ? `Mejores planes optimizados para ${resultados.planActualCostoUF.toFixed(2)} UF` : 'Mejores opciones Colmena encontradas'}
                       </p>
                     </div>
-                    {/* CAMBIO BOTÓN PDF: Texto Cyan, borde, más moderno */}
                     <button 
                       onClick={generarPDF} 
                       className="flex items-center gap-1.5 border border-slate-700 text-cyan-400 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition shadow"
@@ -600,6 +588,9 @@ export default function Home() {
                           <th className="p-4 text-left font-bold tracking-tight uppercase text-xs">Plan Propuesto</th>
                           <th className="p-4 text-right font-bold tracking-tight uppercase text-xs">Costo UF</th>
                           {hayPresupuesto && <th className="p-4 text-right font-bold tracking-tight uppercase text-xs text-amber-300">Ahorro</th>}
+                          {/* NUEVAS CABECERAS PARA LA WEB */}
+                          <th className="p-4 text-left font-bold tracking-tight uppercase text-xs">Hospitalización</th>
+                          <th className="p-4 text-left font-bold tracking-tight uppercase text-xs">Ambulatorio</th>
                           <th className="p-4 text-center font-bold tracking-tight uppercase text-xs">En Red?</th>
                         </tr>
                       </thead>
@@ -632,6 +623,14 @@ export default function Home() {
                                   {ahorroNum > 0 ? `+${ahorroNum.toFixed(2)}` : ahorroNum.toFixed(2)}
                                 </td>
                               )}
+
+                              {/* NUEVAS CELDAS PARA LA WEB */}
+                              <td className="p-4 text-slate-700 text-xs">
+                                {plan.cobertura_hospitalaria || 'Ver detalle'}
+                              </td>
+                              <td className="p-4 text-slate-700 text-xs">
+                                {plan.cobertura_ambulatoria || 'Ver detalle'}
+                              </td>
 
                               <td className="p-4 text-center">
                                 {clinicaPreferida ? (

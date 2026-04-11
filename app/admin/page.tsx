@@ -40,8 +40,8 @@ export default function AdminPage() {
               isapre: "Colmena", 
               p_indiv: parseFloat(fila[4]) || 0,
               p_grupal: parseFloat(fila[6]) || 0, 
-              hosp: hospText,
-              cons: consText, 
+              cobertura_hospitalaria: hospText, // NUEVO: Estandarizado
+              cobertura_ambulatoria: consText,  // NUEVO: Estandarizado
               tiene_parto_completo: mat > 400,
               region: "metropolitana", 
               clinicas: hospText + " " + consText
@@ -67,8 +67,8 @@ export default function AdminPage() {
               isapre: "Colmena", 
               p_indiv: parseFloat(fila[5]) || 0,
               p_grupal: parseFloat(fila[7]) || 0, 
-              hosp: "Cobertura Regional MAX",
-              cons: consText, 
+              cobertura_hospitalaria: "Cobertura Regional MAX", // NUEVO: Estandarizado
+              cobertura_ambulatoria: consText,  // NUEVO: Estandarizado
               tiene_parto_completo: mat > 400,
               region: "regiones", 
               clinicas: "Red Regional MAX " + consText
@@ -103,7 +103,6 @@ export default function AdminPage() {
         </p>
       </div>
       
-      {/* EL NUEVO BOTÓN VOLVER: Estilo ghost, hover elegante */}
       <a 
         href="/" 
         className="mt-12 group flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-600 bg-white border-2 border-slate-200 hover:border-cyan-400 hover:text-cyan-600 hover:shadow-lg hover:shadow-cyan-100 transition-all"
