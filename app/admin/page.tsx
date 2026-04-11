@@ -1,171 +1,116 @@
-'use client';
-
-import { useState } from 'react';
-import * as XLSX from 'xlsx';
-import { supabase } from '@/lib/supabase';
+"use client";
+import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 
 export default function AdminPage() {
-  const [mensaje, setMensaje] = useState('');
-  const [subiendo, setSubiendo] = useState(false);
-  const [planesCargados, setPlanesCargados] = useState(0);
+  const [cantidadPlanes, setCantidadPlanes] = useState(0);
 
-  const extraerCobertura = (nombre: string): string => {
-    const match = nombre.match(/(\d{2})(\d{2})$/);
-    if (match && match[2]) {
-      const porcentaje = parseInt(match[2]);
-      return `${porcentaje}%`;
+  useEffect(() => {
+    const data = localStorage.getItem("planes_colmena");
+    if (data) {
+      setCantidadPlanes(JSON.parse(data).length);
     }
-    return '80%';
-  };
-
-  const procesarExcel = async (file: File) => {
-    setSubiendo(true);
-    setMensaje('');
-    
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const sheetName = workbook.SheetNames.find(name => name === 'RM');
-      if (!sheetName) {
-        setMensaje('❌ No se encontró la hoja "RM"');
-        setSubiendo(false);
-        return;
-      }
-      
-      const sheet = workbook.Sheets[sheetName];
-      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      
-      let startRow = 0;
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i] as any[];
-        if (row[0] === 23 && row[1] === 'STAR') {
-          startRow = i;
-          break;
-        }
-      }
-      
-      const planes: any[] = [];
-      
-      for (let i = startRow; i < rows.length; i++) {
-        const row = rows[i] as any[];
-        if (!row[0] || row[0] === 'TABLA') continue;
-        if (row[0] !== 23) continue;
-        
-        const nombrePlan = row[2];
-        if (!nombrePlan || !nombrePlan.toString().includes('COLMENA')) continue;
-        
-        const precioIndividual = parseFloat(row[4]);
-        const precioGrupal = parseFloat(row[7]);
-        const cobertura = extraerCobertura(nombrePlan);
-        
-        if (precioIndividual > 0) {
-          planes.push({
-            nombre: nombrePlan,
-            isapre: 'Colmena',
-            precio_base: precioIndividual,
-            tipo: 'PF',
-            region: 'metropolitana',
-            cobertura_parto: 'parcial',
-            tope_anual: parseFloat(row[24]) || 0,
-            cobertura_hospitalaria: '100%',
-            cobertura_ambulatoria: cobertura,
-            cobertura_urgencia: `Consulta: ${cobertura}`,
-            clinicas: ['Hospital del Profesor', 'Clínica Dávila', 'Clínica RedSalud', 'Clínica Bupa'],
-            activo: true
-          });
-        }
-        
-        if (precioGrupal > 0 && precioGrupal !== precioIndividual) {
-          planes.push({
-            nombre: `${nombrePlan} (Grupo)`,
-            isapre: 'Colmena',
-            precio_base: precioGrupal,
-            tipo: 'Grupal',
-            region: 'metropolitana',
-            cobertura_parto: 'parcial',
-            tope_anual: parseFloat(row[24]) || 0,
-            cobertura_hospitalaria: '100%',
-            cobertura_ambulatoria: cobertura,
-            cobertura_urgencia: `Consulta: ${cobertura}`,
-            clinicas: ['Hospital del Profesor', 'Clínica Dávila', 'Clínica RedSalud', 'Clínica Bupa'],
-            activo: true
-          });
-        }
-      }
-      
-      if (planes.length > 0) {
-        await supabase.from('planes').update({ activo: false }).eq('isapre', 'Colmena');
-        const { error } = await supabase.from('planes').insert(planes);
-        if (error) throw error;
-        setPlanesCargados(planes.length);
-        setMensaje(`✅ ${planes.length} planes guardados en la nube`);
-      } else {
-        setMensaje('⚠️ No se encontraron planes en el archivo');
-      }
-      
-    } catch (error) {
-      console.error(error);
-      setMensaje('❌ Error al procesar el archivo');
-    }
-    
-    setSubiendo(false);
-    setTimeout(() => setMensaje(''), 5000);
-  };
+  }, []);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) procesarExcel(file);
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const bstr = event.target?.result;
+        const workbook = XLSX.read(bstr, { type: "binary" });
+        let planesLimpios: any[] = [];
+
+        // --- LECTURA HOJA RM ---
+        const sheetRM = workbook.SheetNames.find(n => n.toUpperCase() === "RM");
+        if (sheetRM) {
+          const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetRM], { header: 1 });
+          for (let i = 4; i < rawData.length; i++) {
+            const fila: any = rawData[i];
+            if (!fila[2]) continue;
+            
+            const mat = parseFloat(fila[10]) || 0; 
+            const hospText = String(fila[7] || "Ver detalle");
+            const consText = String(fila[13] || "Ver detalle");
+            
+            const item = {
+              nombre: String(fila[2]), 
+              isapre: "Colmena", 
+              p_indiv: parseFloat(fila[4]) || 0,
+              p_grupal: parseFloat(fila[6]) || 0, 
+              hosp: hospText,
+              cons: consText, 
+              tiene_parto_completo: mat > 400,
+              region: "metropolitana", 
+              clinicas: hospText + " " + consText
+            };
+            if (item.p_indiv > 0) planesLimpios.push({...item, precio_base: item.p_indiv, tipo: "PF"});
+            if (item.p_grupal > 0) planesLimpios.push({...item, precio_base: item.p_grupal, tipo: "Grupal"});
+          }
+        }
+
+        // --- LECTURA HOJA MAX REGIONALES ---
+        const sheetMax = workbook.SheetNames.find(n => n.toUpperCase().includes("MAX REGIONAL"));
+        if (sheetMax) {
+          const rawData = XLSX.utils.sheet_to_json(workbook.Sheets[sheetMax], { header: 1 });
+          for (let i = 2; i < rawData.length; i++) {
+            const fila: any = rawData[i];
+            if (!fila[3]) continue;
+            
+            const mat = parseFloat(fila[16]) || 0;
+            const consText = String(fila[21] || "Ver detalle");
+            
+            const item = {
+              nombre: String(fila[3]), 
+              isapre: "Colmena", 
+              p_indiv: parseFloat(fila[5]) || 0,
+              p_grupal: parseFloat(fila[7]) || 0, 
+              hosp: "Cobertura Regional MAX",
+              cons: consText, 
+              tiene_parto_completo: mat > 400,
+              region: "regiones", 
+              clinicas: "Red Regional MAX " + consText
+            };
+            if (item.p_indiv > 0) planesLimpios.push({...item, precio_base: item.p_indiv, tipo: "PF"});
+            if (item.p_grupal > 0) planesLimpios.push({...item, precio_base: item.p_grupal, tipo: "Grupal"});
+          }
+        }
+
+        localStorage.setItem("planes_colmena", JSON.stringify(planesLimpios));
+        setCantidadPlanes(planesLimpios.length);
+        alert(`¡Éxito! Base de datos cargada con ${planesLimpios.length} planes. Textos de clínicas extraídos correctamente.`);
+      } catch (e) { alert("Error al leer el Excel."); }
+    };
+    reader.readAsBinaryString(file);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <h1 className="text-2xl font-bold text-[#003366] mb-2">🔧 Administración</h1>
-          <p className="text-gray-500 mb-6">
-            Sube tu archivo Excel con los planes de Colmena (hoja "RM")
-          </p>
-          
-          <div className="border-2 border-dashed border-[#0099CC] rounded-xl p-8 text-center bg-blue-50">
-            <input
-              type="file"
-              accept=".xlsx, .xls"
-              onChange={handleFileUpload}
-              disabled={subiendo}
-              className="hidden"
-              id="excelInput"
-            />
-            <label
-              htmlFor="excelInput"
-              className="cursor-pointer bg-[#003366] text-white py-3 px-6 rounded-xl inline-block hover:bg-[#002244] transition"
-            >
-              📂 Subir archivo Excel
-            </label>
-            <p className="text-gray-500 text-sm mt-3">
-              Selecciona el archivo "TP 27 Marzo 2026 (1).xlsx"
-            </p>
-          </div>
-          
-          {subiendo && (
-            <div className="text-center mt-4">
-              <div className="animate-spin text-2xl mb-2">⏳</div>
-              <p>Procesando archivo...</p>
-            </div>
-          )}
-          
-          {mensaje && (
-            <div className={`mt-6 p-4 rounded-xl ${mensaje.includes('✅') ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-              {mensaje}
-            </div>
-          )}
-
-          {planesCargados > 0 && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-800">
-              📊 {planesCargados} planes guardados en la nube
-            </div>
-          )}
-        </div>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-10 text-center">
+      <h1 className="text-3xl font-black mb-2 text-slate-900 tracking-tight">Administración de Planes</h1>
+      <p className="text-slate-500 mb-8 font-medium">Actualiza la base de datos de Colmena</p>
+      
+      <div className="border-2 border-dashed border-cyan-300 p-20 rounded-3xl bg-white shadow-xl shadow-slate-200/50 w-full max-w-2xl transition hover:border-cyan-400">
+        <input 
+          type="file" 
+          accept=".xlsx, .xls" 
+          onChange={handleFileUpload} 
+          className="mb-4 text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-6 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 transition cursor-pointer outline-none" 
+        />
+        <p className="text-2xl text-slate-800 font-black mt-6 tracking-tight">
+          {cantidadPlanes} <span className="text-lg font-bold text-slate-500">planes en memoria</span>
+        </p>
       </div>
+      
+      {/* EL NUEVO BOTÓN VOLVER: Estilo ghost, hover elegante */}
+      <a 
+        href="/" 
+        className="mt-12 group flex items-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-slate-600 bg-white border-2 border-slate-200 hover:border-cyan-400 hover:text-cyan-600 hover:shadow-lg hover:shadow-cyan-100 transition-all"
+      >
+        <span className="group-hover:-translate-x-1 transition-transform">←</span>
+        Volver al Cotizador
+      </a>
     </div>
   );
 }

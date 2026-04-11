@@ -6,9 +6,7 @@ import autoTable from 'jspdf-autotable';
 
 type ResultadosType = {
   sumaFactores: number;
-  cotizacionLegalUF: number;
-  planActualCostoUF: number | null;
-  mejorOpcionGeneral: any;
+  planActualCostoUF: number;
   mejorOpcionConClinica: any;
   topEconomicos: any[];
 };
@@ -24,6 +22,7 @@ export default function Home() {
   const [region, setRegion] = useState('metropolitana');
   const [tipoPlan, setTipoPlan] = useState('todos');
   const [clinicaPreferida, setClinicaPreferida] = useState('');
+  const [requiereParto, setRequiereParto] = useState(false);
   const [planActualNombre, setPlanActualNombre] = useState('');
   const [planActualCostoUF, setPlanActualCostoUF] = useState('');
   const [planActualPDF, setPlanActualPDF] = useState('');
@@ -65,13 +64,15 @@ export default function Home() {
     const nuevoFolio = generarNumeroFolio();
     setFolio(nuevoFolio);
     
+    const presupuestoValido = resultados.planActualCostoUF > 0;
+    
     doc.setFontSize(20);
-    doc.setTextColor(0, 51, 102);
+    doc.setTextColor(30, 41, 59); // Slate-800
     doc.text('ASESOR COLMENA', 105, 20, { align: 'center' });
     
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
-    doc.text('Informe de Cotización', 105, 28, { align: 'center' });
+    doc.text('Informe de Cotizacion Estrategica', 105, 28, { align: 'center' });
     
     doc.setFontSize(8);
     doc.setTextColor(80, 80, 80);
@@ -79,11 +80,11 @@ export default function Home() {
     doc.text(`Fecha: ${fecha}`, 14, 45);
     doc.text(`Hora: ${new Date().toLocaleTimeString('es-CL')}`, 14, 50);
     
-    doc.setDrawColor(0, 153, 204);
+    doc.setDrawColor(34, 211, 238); // Cyan-400
     doc.line(14, 55, 200, 55);
     
     doc.setFontSize(12);
-    doc.setTextColor(0, 51, 102);
+    doc.setTextColor(30, 41, 59);
     doc.text('DATOS DEL CLIENTE', 14, 68);
     
     doc.setFontSize(9);
@@ -91,157 +92,167 @@ export default function Home() {
     let y = 78;
     doc.text(`Nombre: ${clienteNombre || 'No especificado'}`, 14, y); y += 6;
     doc.text(`Email: ${clienteEmail || 'No especificado'}`, 14, y); y += 6;
-    doc.text(`Teléfono: ${clienteTelefono || 'No especificado'}`, 14, y); y += 8;
+    doc.text(`Telefono: ${clienteTelefono || 'No especificado'}`, 14, y); y += 8;
     
-    doc.text(`Edad Titular: ${titularEdad} años`, 14, y); y += 5;
-    doc.text(`Cargas: ${cargas.filter(c => c && c !== '').join(', ') || 'Ninguna'} años`, 14, y); y += 5;
+    doc.text(`Edad Titular: ${titularEdad} anos`, 14, y); y += 5;
+    doc.text(`Cargas: ${cargas.filter(c => c && c !== '').join(', ') || 'Ninguna'} anos`, 14, y); y += 5;
     doc.text(`Suma de factores: ${resultados.sumaFactores || 0}`, 14, y); y += 5;
     doc.text(`Renta imponible: ${formatearPesos(parseFloat(renta) || 0)}`, 14, y); y += 5;
-    doc.text(`Cotización legal 7%: ${formatearPesos((parseFloat(renta) || 0) * 0.07)}`, 14, y); y += 5;
-    doc.text(`Región: ${region === 'metropolitana' ? 'Metropolitana' : 'Regiones'}`, 14, y); y += 5;
-    doc.text(`Tipo de plan: ${tipoPlan === 'todos' ? 'Todos' : tipoPlan === 'PF' ? 'Individual (PF)' : tipoPlan === 'Grupal' ? 'Grupal' : 'Libre Elección (LE)'}`, 14, y); y += 5;
+    doc.text(`Cotizacion legal 7%: ${formatearPesos((parseFloat(renta) || 0) * 0.07)}`, 14, y); y += 5;
+    doc.text(`Region: ${region === 'metropolitana' ? 'Metropolitana' : 'Regiones (MAX)'}`, 14, y); y += 5;
+    doc.text(`Tipo de plan: ${tipoPlan === 'todos' ? 'Todos' : tipoPlan === 'PF' ? 'Individual (PF)' : tipoPlan === 'Grupal' ? 'Grupal' : 'Libre Eleccion (LE)'}`, 14, y); y += 5;
     
     if (clinicaPreferida) {
-      doc.text(`Clínica preferente: ${clinicaPreferida}`, 14, y); y += 8;
+      doc.text(`Clinica preferente: ${clinicaPreferida}`, 14, y); y += 8;
     }
     
-    doc.setFontSize(12);
-    doc.setTextColor(0, 51, 102);
-    doc.text('PLAN ACTUAL DEL CLIENTE', 14, y + 5);
-    y += 15;
-    
-    doc.setFontSize(9);
-    doc.setTextColor(60, 60, 60);
-    doc.text(`Plan: ${planActualNombre || 'No especificado'}`, 14, y); y += 6;
-    doc.text(`Costo mensual: ${planActualCostoUF ? planActualCostoUF + ' UF' : 'No especificado'}`, 14, y); y += 6;
-    if (planActualPDF) {
-      doc.text(`Documento adjunto: ${planActualPDF}`, 14, y); y += 6;
+    if (presupuestoValido) {
+      doc.setFontSize(12);
+      doc.setTextColor(30, 41, 59);
+      doc.text('PLAN ACTUAL DEL CLIENTE', 14, y + 5);
+      y += 15;
+      
+      doc.setFontSize(9);
+      doc.setTextColor(60, 60, 60);
+      doc.text(`Plan: ${planActualNombre || 'No especificado'}`, 14, y); y += 6;
+      doc.text(`Costo mensual: ${resultados.planActualCostoUF} UF`, 14, y); y += 6;
+      if (planActualPDF) {
+        doc.text(`Documento adjunto: ${planActualPDF}`, 14, y); y += 6;
+      }
     }
     
     y += 5;
     
     doc.setFontSize(12);
-    doc.setTextColor(0, 51, 102);
-    doc.text('COMPARATIVA DE PLANES COLMENA', 14, y + 5);
+    doc.setTextColor(30, 41, 59);
+    doc.text('PROPUESTA DE VALOR COLMENA', 14, y + 5);
     y += 15;
     
-    const tableData = resultados.topEconomicos?.map((plan: any) => [
-      plan.nombre.length > 22 ? plan.nombre.substring(0, 20) + '...' : plan.nombre,
-      plan.tipo === 'PF' ? 'Ind' : plan.tipo === 'Grupal' ? 'Grp' : 'LE',
-      `${plan.costoUF.toFixed(2)}`,
-      plan.coberturaHospitalaria || 'N/A',
-      plan.coberturaAmbulatoria || 'N/A',
-      plan.coberturaParto === '✅ Parto completo' ? 'Completo' : 'Con tope',
-      plan.coberturaUrgencia?.substring(0, 18) || 'N/A'
-    ]);
+    const tableData = resultados.topEconomicos?.map((plan: any) => {
+      let etiqueta = '';
+      if (resultados.mejorOpcionConClinica && plan.nombre === resultados.mejorOpcionConClinica.nombre) {
+        etiqueta = '(Rec.)';
+      }
+
+      const row = [
+        (plan.nombre.length > 25 ? plan.nombre.substring(0, 23) + '...' : plan.nombre) + " " + etiqueta,
+        plan.tipo === 'PF' ? 'Ind' : plan.tipo === 'Grupal' ? 'Grp' : 'LE',
+        `${plan.costoUF.toFixed(2)}`,
+        plan.cobertura_hospitalaria?.substring(0, 18) || 'Ver det.',
+        plan.incluyeClinicaPreferida ? 'SI' : 'NO'
+      ];
+
+      if (presupuestoValido) {
+        const ahorroNum = resultados.planActualCostoUF - plan.costoUF;
+        const ahorroStr = ahorroNum > 0 ? `+${ahorroNum.toFixed(2)}` : ahorroNum.toFixed(2);
+        row.splice(3, 0, ahorroStr); 
+      }
+      return row;
+    });
     
+    const headRow = presupuestoValido 
+      ? [['Plan propuesto', 'Tipo', 'Costo UF', 'Ahorro UF', 'Hospitalizacion', 'En Red?']]
+      : [['Plan propuesto', 'Tipo', 'Costo UF', 'Hospitalizacion', 'En Red?']];
+
     autoTable(doc, {
       startY: y + 5,
-      head: [['Plan', 'Tipo', 'Costo UF', 'Hosp', 'Ambul', 'Parto', 'Urgencia']],
+      head: headRow,
       body: tableData,
       theme: 'striped',
-      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255], halign: 'center' },
+      headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], halign: 'center' }, // Slate-900
       styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-      columnStyles: {
-        0: { cellWidth: 45 },
-        1: { cellWidth: 12, halign: 'center' },
-        2: { cellWidth: 18, halign: 'right' },
-        3: { cellWidth: 12, halign: 'center' },
-        4: { cellWidth: 12, halign: 'center' },
-        5: { cellWidth: 18, halign: 'center' },
-        6: { cellWidth: 25 }
+      columnStyles: presupuestoValido ? {
+        0: { cellWidth: 55 },
+        1: { cellWidth: 10, halign: 'center' },
+        2: { cellWidth: 15, halign: 'right' },
+        3: { cellWidth: 15, halign: 'right', textColor: [34, 139, 34] },
+        4: { cellWidth: 45, halign: 'left' },
+        5: { cellWidth: 15, halign: 'center' }
+      } : {
+        0: { cellWidth: 65 },
+        1: { cellWidth: 15, halign: 'center' },
+        2: { cellWidth: 20, halign: 'right' },
+        3: { cellWidth: 40, halign: 'left' },
+        4: { cellWidth: 15, halign: 'center' }
       }
     });
     
-    const finalY = (doc as any).lastAutoTable.finalY + 10;
-    let clinicasY = finalY;
+    let yClinicas = (doc as any).lastAutoTable.finalY + 15;
     
-    if (clinicasY > 270) {
+    if (yClinicas > 250) {
       doc.addPage();
-      clinicasY = 20;
+      yClinicas = 20;
     }
     
     doc.setFontSize(11);
-    doc.setTextColor(0, 51, 102);
-    doc.text('CLÍNICAS INCLUIDAS POR PLAN', 14, clinicasY);
-    clinicasY += 8;
+    doc.setTextColor(30, 41, 59);
+    doc.text('DETALLE DE RED PREFERENTE', 14, yClinicas);
+    yClinicas += 8;
     
     doc.setFontSize(7);
     doc.setTextColor(80, 80, 80);
     
-    resultados.topEconomicos?.slice(0, 8).forEach((plan: any, idx: number) => {
-      if (clinicasY > 270) {
+    resultados.topEconomicos?.slice(0, 6).forEach((plan: any) => {
+      if (yClinicas > 270) {
         doc.addPage();
-        clinicasY = 20;
+        yClinicas = 20;
       }
       doc.setFontSize(8);
-      doc.setTextColor(0, 51, 102);
-      doc.text(`${plan.nombre.substring(0, 30)}:`, 14, clinicasY);
-      clinicasY += 4;
+      doc.setTextColor(30, 41, 59);
+      doc.text(`${plan.nombre}:`, 14, yClinicas);
+      yClinicas += 4;
       doc.setFontSize(7);
       doc.setTextColor(80, 80, 80);
-      const clinicas = plan.clinicasPrincipales || 'Consultar ficha completa del plan';
+      const clinicas = plan.clinicas || 'Consultar ficha completa del plan';
       const lines = doc.splitTextToSize(clinicas, 175);
-      doc.text(lines, 14, clinicasY);
-      clinicasY += (lines.length * 4) + 6;
+      doc.text(lines, 14, yClinicas);
+      yClinicas += (lines.length * 4) + 6;
     });
     
-    let recY = clinicasY + 10;
-    if (recY > 270) {
+    let recY = yClinicas + 10;
+    if (recY > 250) {
       doc.addPage();
       recY = 20;
     }
     
     if (clinicaPreferida && resultados.mejorOpcionConClinica) {
-      doc.setFontSize(11);
-      doc.setTextColor(34, 139, 34);
+      doc.setFontSize(12);
+      doc.setTextColor(34, 139, 34); 
       doc.setFont('helvetica', 'bold');
-      doc.text(`RECOMENDACIÓN PARA ${clinicaPreferida.toUpperCase()}`, 14, recY);
+      doc.text(`RECOMENDACION ESTRELLA: ${clinicaPreferida.toUpperCase()}`, 14, recY);
       recY += 8;
       
-      doc.setFontSize(9);
+      doc.setFontSize(10);
       doc.setTextColor(60, 60, 60);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Te recomendamos cotizar ${resultados.mejorOpcionConClinica.nombre}`, 14, recY); recY += 6;
-      doc.text(`✅ Incluye ${clinicaPreferida} en red preferente`, 14, recY); recY += 6;
-      
-      doc.setFontSize(14);
-      doc.setTextColor(34, 139, 34);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Ahorro potencial: ${resultados.mejorOpcionConClinica.ahorroUF.toFixed(2)} UF/mes`, 14, recY); recY += 8;
-      
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Cobertura Hospitalaria: ${resultados.mejorOpcionConClinica.coberturaHospitalaria || 'N/A'}`, 14, recY); recY += 5;
-      doc.text(`Cobertura Ambulatoria: ${resultados.mejorOpcionConClinica.coberturaAmbulatoria || 'N/A'}`, 14, recY); recY += 5;
-      doc.text(`Cobertura Urgencia: ${resultados.mejorOpcionConClinica.coberturaUrgencia || 'N/A'}`, 14, recY); recY += 5;
-      doc.text(`Parto: ${resultados.mejorOpcionConClinica.coberturaParto || 'N/A'}`, 14, recY);
-      
-    } else if (resultados.mejorOpcionGeneral) {
-      doc.setFontSize(11);
-      doc.setTextColor(34, 139, 34);
-      doc.setFont('helvetica', 'bold');
-      doc.text('RECOMENDACIÓN (MEJOR PRECIO)', 14, recY);
+      doc.text(`El plan ${resultados.mejorOpcionConClinica.nombre} le otorga la mejor cobertura para su clinica.`, 14, recY); 
       recY += 8;
       
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Te recomendamos cotizar ${resultados.mejorOpcionGeneral.nombre}`, 14, recY); recY += 6;
-      
       doc.setFontSize(14);
-      doc.setTextColor(34, 139, 34);
+      doc.setTextColor(34, 139, 34); 
       doc.setFont('helvetica', 'bold');
-      doc.text(`Ahorro potencial: ${resultados.mejorOpcionGeneral.ahorroUF.toFixed(2)} UF/mes`, 14, recY); recY += 8;
+      doc.text(`Costo Total: ${resultados.mejorOpcionConClinica.costoUF.toFixed(2)} UF/mes`, 14, recY); 
+      recY += 10;
       
-      doc.setFontSize(9);
-      doc.setTextColor(60, 60, 60);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`Cobertura Hospitalaria: ${resultados.mejorOpcionGeneral.coberturaHospitalaria || 'N/A'}`, 14, recY); recY += 5;
-      doc.text(`Cobertura Ambulatoria: ${resultados.mejorOpcionGeneral.coberturaAmbulatoria || 'N/A'}`, 14, recY); recY += 5;
-      doc.text(`Cobertura Urgencia: ${resultados.mejorOpcionGeneral.coberturaUrgencia || 'N/A'}`, 14, recY); recY += 5;
-      doc.text(`Parto: ${resultados.mejorOpcionGeneral.coberturaParto || 'N/A'}`, 14, recY);
+      if (presupuestoValido) {
+         const ahorroTotal = resultados.planActualCostoUF - resultados.mejorOpcionConClinica.costoUF;
+         if (ahorroTotal > 0) {
+           doc.setFontSize(11);
+           doc.text(`¡Genera un ahorro de ${ahorroTotal.toFixed(2)} UF respecto a su plan actual!`, 14, recY); 
+           recY += 10;
+         }
+      }
+    } else if (clinicaPreferida && !resultados.mejorOpcionConClinica) {
+        doc.setFontSize(11);
+        doc.setTextColor(200, 50, 50);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`NOTA SOBRE CLINICA PREFERENTE:`, 14, recY);
+        recY += 6;
+        doc.setFontSize(9);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`No se encontraron planes que incluyan expresamente a la clinica en su red para los parametros seleccionados.`, 14, recY);
+        recY += 10;
     }
     
     const notasY = recY + 15;
@@ -249,38 +260,32 @@ export default function Home() {
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
       doc.text('Notas:', 14, notasY);
-      doc.text('• Los costos incluyen prima GES de 0.9 UF', 14, notasY + 5);
-      doc.text('• Los valores son referenciales y pueden variar según preexistencias', 14, notasY + 10);
-      doc.text('• Cotización formal sujeta a verificación de condiciones de salud', 14, notasY + 15);
+      doc.text(`- Los costos incluyen prima GES de 1.036 UF por persona.`, 14, notasY + 5);
+      doc.text('- Los valores son referenciales y pueden variar segun preexistencias.', 14, notasY + 10);
+      doc.text('- Cotizacion formal sujeta a verificacion de condiciones de salud.', 14, notasY + 15);
     }
     
     const firmaY = (notasY < 270 ? notasY + 30 : recY + 30);
     if (firmaY < 270) {
       doc.setFontSize(10);
-      doc.setTextColor(0, 51, 102);
-      doc.text('DATOS DEL AGENTE', 14, firmaY);
+      doc.setTextColor(30, 41, 59);
+      doc.text('DATOS DEL ASESOR', 14, firmaY);
       
       doc.setFontSize(9);
       doc.setTextColor(60, 60, 60);
       let yFirma = firmaY + 8;
       doc.text(`Agente: ${agenteNombre}`, 14, yFirma); yFirma += 6;
-      doc.text(`Teléfono: ${agenteTelefono}`, 14, yFirma); yFirma += 6;
-      if (agenteEmail) doc.text(`Email: ${agenteEmail}`, 14, yFirma); yFirma += 6;
+      doc.text(`Telefono: ${agenteTelefono}`, 14, yFirma); yFirma += 6;
+      if (agenteEmail) {
+        doc.text(`Email: ${agenteEmail}`, 14, yFirma); 
+        yFirma += 6;
+      }
       
       doc.setDrawColor(150, 150, 150);
       doc.line(14, yFirma + 5, 100, yFirma + 5);
       doc.setFontSize(8);
       doc.setTextColor(120, 120, 120);
-      doc.text('Firma del Agente', 14, yFirma + 10);
-    }
-    
-    const pageCount = doc.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(7);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Asesor Colmena - Comparador oficial de planes de salud', 105, 285, { align: 'center' });
-      doc.text(`Página ${i} de ${pageCount}`, 200, 285, { align: 'right' });
+      doc.text('Firma', 14, yFirma + 10);
     }
     
     doc.save(`Cotizacion_${clienteNombre || 'Cliente'}_${nuevoFolio}.pdf`);
@@ -288,277 +293,353 @@ export default function Home() {
 
   const cotizar = async () => {
     setCargando(true);
+    
+    const planesGuardados = localStorage.getItem("planes_colmena");
+    
+    if (!planesGuardados) {
+      alert("Aún no has subido el archivo Excel. Por favor ve al 'Panel de control' y súbelo primero.");
+      setCargando(false);
+      return;
+    }
+
     try {
+      const planesParseados = JSON.parse(planesGuardados);
+
       const response = await fetch('/api/cotizar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({
-          titularEdad: parseInt(titularEdad),
+          titularEdad: titularEdad ? parseInt(titularEdad) : 0,
           cargasEdades: cargas.filter(c => c && c !== '').map(Number),
-          renta: parseFloat(renta),
+          renta: renta ? parseFloat(renta) : 0,
           region: region,
           tipoPlan: tipoPlan,
           clinicaPreferida: clinicaPreferida,
+          requiereParto: requiereParto,
           planActualNombre: planActualNombre,
           planActualCostoUF: planActualCostoUF ? parseFloat(planActualCostoUF) : null,
+          planes: planesParseados 
         })
       });
+
       const data = await response.json();
-      setResultados(data);
+      
+      if (!response.ok) {
+        alert(`Error en el cálculo: ${data.error}`);
+      } else if (data.topEconomicos.length === 0) {
+        alert("No se encontraron planes para este presupuesto o clínica. Intente quitar filtros.");
+      } else {
+        setResultados(data);
+      }
+      
     } catch (error) {
       console.error('Error:', error);
+      alert("Hubo un error al conectar con el calculador.");
     }
     setCargando(false);
   };
 
+  const hayPresupuesto = resultados && resultados.planActualCostoUF > 0;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <header className="bg-[#003366] shadow-md border-b-4 border-[#0099CC]">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+    // CAMBIO FONDO: Gris ultra claro sofisticado
+    <div className="min-h-screen bg-slate-50">
+      {/* CAMBIO HEADER: Slate profundo con acento Cian */}
+      <header className="bg-slate-900 shadow-xl border-b-2 border-cyan-400">
+        <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-white">🏥 Asesor Colmena</h1>
-              <p className="text-sm text-[#0099CC]">Comparador oficial de planes de salud</p>
+              <h1 className="text-3xl font-black text-white tracking-tighter">Asesor<span className="text-cyan-400">Colmena</span><span className="text-amber-400 text-sm font-light ml-1">v.Pro</span></h1>
+              <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest">Herramienta de Cierre de Alto Valor</p>
             </div>
-            <a href="/admin" className="bg-[#0099CC] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#0088BB] transition">
-              🔧 Panel de control
+            {/* CAMBIO BOTÓN ADMIN: Elegante, borde, efecto hover sutil */}
+            <a href="/admin" className="flex items-center gap-2 border border-slate-700 text-slate-300 px-5 py-2.5 rounded-full text-xs font-semibold hover:border-cyan-400 hover:text-cyan-400 transition-all shadow">
+              <span>🔧</span>
+              Panel de Control
             </a>
           </div>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto p-4">
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-2xl shadow-xl p-6">
-            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-[#0099CC]">
-              <span className="text-2xl">📋</span>
-              <h2 className="text-xl font-bold text-[#003366]">Datos del Cliente</h2>
+      <div className="max-w-7xl mx-auto p-6 md:p-8">
+        <div className="grid lg:grid-cols-[1fr,1.3fr] gap-8">
+          
+          {/* COLUMNA IZQUIERDA: FORMULARIO ESTILIZADO */}
+          <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-8">
+            <div className="flex items-center gap-3 mb-6 pb-3 border-b border-slate-100">
+              <span className="text-3xl">📋</span>
+              <div>
+                 <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Ficha del Cliente</h2>
+                 <p className="text-sm text-slate-500">Ingresa los parámetros de búsqueda</p>
+              </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-sm font-semibold text-gray-700 mb-3">📞 Datos de contacto (opcional)</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="text" placeholder="Nombre" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} className="border rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0099CC] outline-none" />
-                  <input type="email" placeholder="Email" value={clienteEmail} onChange={(e) => setClienteEmail(e.target.value)} className="border rounded-lg p-2 text-sm focus:ring-2 focus:ring-[#0099CC] outline-none" />
-                  <input type="tel" placeholder="Teléfono" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} className="border rounded-lg p-2 text-sm col-span-2 focus:ring-2 focus:ring-[#0099CC] outline-none" />
+            <div className="space-y-6">
+              
+              {/* Bloque Contacto */}
+              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 shadow-inner">
+                <p className="text-sm font-bold text-slate-800 mb-4 tracking-tight flex items-center gap-2"><span className="text-cyan-500">📞</span> Datos de Contacto</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <input type="text" placeholder="Nombre completo" value={clienteNombre} onChange={(e) => setClienteNombre(e.target.value)} className="border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" />
+                  <input type="email" placeholder="Email corporativo / personal" value={clienteEmail} onChange={(e) => setClienteEmail(e.target.value)} className="border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" />
+                  <input type="tel" placeholder="Teléfono de contacto" value={clienteTelefono} onChange={(e) => setClienteTelefono(e.target.value)} className="border border-slate-200 rounded-xl p-3 text-sm md:col-span-2 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">🎂 Edad del Titular *</label>
-                <input type="number" value={titularEdad} onChange={(e) => setTitularEdad(e.target.value)} className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#0099CC] outline-none" />
+              {/* Bloque Edades */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Edad del Titular *</label>
+                    <input type="number" value={titularEdad} onChange={(e) => setTitularEdad(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" />
+                </div>
+                <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Edad de Cargas</label>
+                    <div className="space-y-2">
+                    {cargas.map((edad, idx) => (
+                      <input 
+                        key={idx} 
+                        type="number" 
+                        value={edad} 
+                        onChange={(e) => actualizarCarga(idx, e.target.value)} 
+                        className="w-full border border-slate-200 rounded-lg p-2.5 text-sm focus:ring-1 focus:ring-cyan-400 outline-none" 
+                        placeholder={`Edad Carga ${idx + 1}`} 
+                      />
+                    ))}
+                    {cargas.length < 6 && (
+                      <button onClick={agregarCarga} className="text-cyan-600 text-xs font-bold hover:text-cyan-800 mt-1 transition">
+                        + Agregar otra carga
+                      </button>
+                    )}
+                    </div>
+                </div>
               </div>
               
+              {/* Bloque Renta */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">👶 Edad de Cargas</label>
-                {cargas.map((edad, idx) => (
-                  <input key={idx} type="number" value={edad} onChange={(e) => actualizarCarga(idx, e.target.value)} className="w-full border rounded-lg p-2 mb-2 focus:ring-2 focus:ring-[#0099CC] outline-none" placeholder={`Carga ${idx + 1}`} />
-                ))}
-                {cargas.length < 6 && <button onClick={agregarCarga} className="text-[#0099CC] text-sm hover:text-[#003366]">+ Agregar carga</button>}
+                <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Renta Imponible ($) *</label>
+                <input type="number" value={renta} onChange={(e) => setRenta(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" />
+                <p className="text-xs text-slate-500 mt-2 font-mono bg-slate-100 p-2 rounded-lg inline-block">7% Legal = {formatearPesos(parseFloat(renta) * 0.07 || 0)}</p>
               </div>
-              
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">💰 Renta Imponible ($) *</label>
-                <input type="number" value={renta} onChange={(e) => setRenta(e.target.value)} className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#0099CC] outline-none" />
-                <p className="text-xs text-gray-500 mt-1">7% = {formatearPesos(parseFloat(renta) * 0.07 || 0)}</p>
+
+              {/* Bloque Filtros */}
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Región *</label>
+                    <select value={region} onChange={(e) => setRegion(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none bg-white transition">
+                      <option value="metropolitana">Metropolitana</option>
+                      <option value="regiones">Regiones (MAX)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-xs text-cyan-500">●</span> Tipo Plan *</label>
+                    <select value={tipoPlan} onChange={(e) => setTipoPlan(e.target.value)} className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none bg-white transition">
+                      <option value="todos">Todos</option>
+                      <option value="PF">Individual (PF)</option>
+                      <option value="Grupal">Grupal</option>
+                    </select>
+                  </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">📍 Región del cliente *</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
-                    <input type="radio" value="metropolitana" checked={region === 'metropolitana'} onChange={(e) => setRegion(e.target.value)} className="w-4 h-4 accent-[#003366]" /> Metropolitana
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" value="regiones" checked={region === 'regiones'} onChange={(e) => setRegion(e.target.value)} className="w-4 h-4 accent-[#003366]" /> Regiones
-                  </label>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">⚠️ Planes MAX solo disponibles en Regiones</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">📋 Tipo de plan a cotizar *</label>
-                <div className="flex gap-4 flex-wrap">
-                  <label className="flex items-center gap-2">
-                    <input type="radio" value="todos" checked={tipoPlan === 'todos'} onChange={(e) => setTipoPlan(e.target.value)} className="w-4 h-4 accent-[#003366]" /> Todos
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" value="PF" checked={tipoPlan === 'PF'} onChange={(e) => setTipoPlan(e.target.value)} className="w-4 h-4 accent-[#003366]" /> Individual (PF)
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" value="Grupal" checked={tipoPlan === 'Grupal'} onChange={(e) => setTipoPlan(e.target.value)} className="w-4 h-4 accent-[#003366]" /> Grupal
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="radio" value="LE" checked={tipoPlan === 'LE'} onChange={(e) => setTipoPlan(e.target.value)} className="w-4 h-4 accent-[#003366]" /> Libre Elección (LE)
-                  </label>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">💡 Los planes Grupales son más económicos pero requieren grupo mínimo</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">🏥 Clínica preferente (opcional)</label>
+                <label className="block text-sm font-bold text-slate-800 mb-1.5 flex items-center gap-1.5"><span className="text-cyan-500">🏥</span> Clínica preferente</label>
                 <select 
                   value={clinicaPreferida} 
                   onChange={(e) => setClinicaPreferida(e.target.value)}
-                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#0099CC] outline-none bg-white"
+                  className="w-full border border-slate-200 rounded-xl p-3 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none bg-white transition"
                 >
-                  <option value="">-- Seleccione una clínica --</option>
+                  <option value="">-- Buscar la mejor clínica por valor --</option>
                   <option value="Clínica Alemana">🏥 Clínica Alemana</option>
                   <option value="Clínica Las Condes">🏥 Clínica Las Condes</option>
                   <option value="Clínica Los Andes">🏥 Clínica Los Andes</option>
                   <option value="Clínica Santa María">🏥 Clínica Santa María</option>
                   <option value="Clínica Dávila">🏥 Clínica Dávila</option>
                   <option value="Clínica Indisa">🏥 Clínica Indisa</option>
-                  <option value="Clínica Bupa">🏥 Clínica Bupa</option>
-                  <option value="Clínica UC Christus">🏥 Clínica UC Christus</option>
-                  <option value="Clínica RedSalud">🏥 Clínica RedSalud</option>
-                  <option value="Clínica San Carlos">🏥 Clínica San Carlos</option>
-                  <option value="Hospital del Profesor">🏥 Hospital del Profesor</option>
-                  <option value="Hospital Clínico U de Chile">🏥 Hospital Clínico U de Chile</option>
+                  <option value="RedSalud">🏥 RedSalud</option>
                 </select>
               </div>
 
-              <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-800 mb-3">💰 Plan actual del cliente</h3>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del plan (opcional)</label>
-                  <input type="text" value={planActualNombre} onChange={(e) => setPlanActualNombre(e.target.value)} className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#0099CC] outline-none" placeholder="Ej: SMART PRO 4000S" />
-                </div>
-                <div className="mb-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">¿Cuánto paga hoy? (UF)</label>
-                  <input type="number" step="0.01" value={planActualCostoUF} onChange={(e) => setPlanActualCostoUF(e.target.value)} className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-[#0099CC] outline-none" placeholder="Ej: 7.42" />
-                </div>
+              <label className="flex items-center gap-3 bg-slate-50 border border-slate-100 p-4 rounded-xl cursor-pointer hover:bg-cyan-50 transition shadow-inner">
+                <input type="checkbox" checked={requiereParto} onChange={e => setRequiereParto(e.target.checked)} className="w-6 h-6 rounded-lg accent-cyan-500 border-slate-300" />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">📄 Subir PDF del plan (opcional)</label>
-                  <input
-                    type="file"
-                    accept=".pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setPlanActualPDF(file.name);
-                    }}
-                    className="w-full border rounded-lg p-2 text-sm"
+                    <span className="block text-sm font-bold text-slate-900">Exigir cobertura de Parto Completo</span>
+                    <span className="block text-xs text-slate-500 mt-0.5">Filtra planes que no cubran maternidad 100% en la red.</span>
+                </div>
+              </label>
+
+              {/* Bloque Presupuesto Actual Estilizado */}
+              <div className="border-t border-slate-100 pt-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl">💰</span>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 tracking-tight">Presupuesto Referencial (Paga Hoy)</h3>
+                    <p className="text-xs text-slate-500">Buscamos optimizar este monto con Alto Valor Colmena.</p>
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">¿Cuánto paga hoy en UF?</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    value={planActualCostoUF} 
+                    onChange={(e) => setPlanActualCostoUF(e.target.value)} 
+                    className="w-full border-2 border-cyan-100 rounded-xl p-4 bg-cyan-50 font-black text-2xl text-cyan-950 focus:ring-2 focus:ring-cyan-300 focus:border-cyan-400 outline-none transition" 
+                    placeholder="Ej: 8.50" 
                   />
-                  {planActualPDF && <p className="text-xs text-green-600 mt-1">✅ {planActualPDF}</p>}
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <input type="text" placeholder="Nombre Plan Actual (opcional)" value={planActualNombre} onChange={(e) => setPlanActualNombre(e.target.value)} className="border border-slate-200 rounded-xl p-3 text-sm focus:ring-cyan-400 outline-none" />
+                  <div className="border border-slate-200 rounded-xl p-2.5 bg-gray-50 text-xs text-gray-600 flex items-center justify-between gap-2 overflow-hidden">
+                    <span className="truncate">📄 {planActualPDF ? planActualPDF : 'PDF del plan...'}</span>
+                    <label className="bg-slate-900 text-white text-[9px] px-2 py-1 rounded cursor-pointer uppercase font-bold tracking-wider hover:bg-slate-700">Subir</label>
+                    <input type="file" accept=".pdf" onChange={(e)=>setPlanActualPDF(e.target.files?.[0]?.name || '')} className="hidden" />
+                  </div>
                 </div>
               </div>
               
-              <button onClick={cotizar} disabled={cargando} className="w-full bg-white text-[#003366] border-2 border-[#003366] py-3 rounded-xl font-semibold hover:bg-gray-50 transition shadow-md">
-                {cargando ? '🔍 Analizando planes...' : '🚀 Comparar Planes Colmena'}
+              {/* CAMBIO BOTÓN COTIZAR: Degradado Premium, sombra, texto bold */}
+              <button 
+                onClick={cotizar} 
+                disabled={cargando} 
+                className="w-full bg-gradient-to-r from-slate-900 to-slate-800 text-white py-4.5 rounded-2xl font-extrabold hover:to-slate-700 transition-all shadow-xl text-lg mt-6 tracking-tight flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {cargando ? (
+                    <> <span className="animate-spin text-xl">⏳</span> Analizando Propuesta...</>
+                ) : (
+                    <>🚀 Cotizar Alto Valor Colmena</>
+                )}
               </button>
             </div>
           </div>
 
-          <div className="space-y-4">
+          {/* COLUMNA DERECHA: RESULTADOS GAMA ALTA */}
+          <div className="space-y-6">
+            
             {cargando && (
-              <div className="bg-white rounded-2xl shadow-xl p-12 text-center">
-                <div className="animate-spin text-5xl mb-4">⏳</div>
-                <p className="text-gray-500">Analizando planes Colmena...</p>
+              <div className="bg-white rounded-3xl shadow-lg border border-slate-100 p-16 text-center">
+                <div className="animate-spin text-6xl mb-6 text-cyan-400">⏳</div>
+                <p className="text-xl font-bold text-slate-800 tracking-tight">Estamos calculando la mejor Propuesta de Valor...</p>
+                <p className="text-sm text-slate-500 mt-2">Maximizando beneficios por UF para {clienteNombre || 'tu cliente'}.</p>
               </div>
             )}
 
             {resultados && !cargando && (
               <>
-                <div className="bg-gradient-to-r from-[#003366] to-[#0099CC] text-white rounded-2xl shadow-xl p-5">
-                  <h3 className="font-semibold opacity-90 mb-2">📊 Resumen del cliente</h3>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>Suma de factores:</div>
-                    <div className="font-bold text-right">{resultados.sumaFactores}</div>
-                    <div>Cotización 7%:</div>
-                    <div className="font-bold text-right">{resultados.cotizacionLegalUF?.toFixed(2)} UF</div>
-                    {planActualCostoUF && (
+                {/* Resumen Superior Eléctrico */}
+                <div className="bg-slate-900 text-white rounded-3xl shadow-xl p-6 border border-slate-700 shadow-cyan-900/10">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-extrabold tracking-tight flex items-center gap-2"><span className="text-cyan-400 text-sm">●</span> Resumen Operativo</h3>
+                    <span className="text-xs text-slate-400 font-mono">Folioctz: {folio.split('-')[1]}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm border-t border-slate-700 pt-4">
+                    <div className="text-slate-400">Suma de factores:</div>
+                    <div className="font-bold text-right text-white font-mono">{resultados.sumaFactores.toFixed(2)}</div>
+                    
+                    {hayPresupuesto && (
                       <>
-                        <div>Paga hoy:</div>
-                        <div className="font-bold text-yellow-200 text-right">{planActualCostoUF} UF</div>
+                        <div className="text-slate-400">Paga Hoy (Competencia):</div>
+                        <div className="font-bold text-cyan-300 text-right font-mono text-base">{resultados.planActualCostoUF.toFixed(2)} UF</div>
                       </>
                     )}
                   </div>
                 </div>
 
-                {clinicaPreferida && resultados.mejorOpcionConClinica ? (
-                  <div className="bg-green-50 border-l-4 border-green-500 rounded-2xl shadow-xl p-5">
-                    <div className="flex justify-between items-center flex-wrap gap-3">
+                {/* Recomendación Clínica (Premium Amber/Oro) */}
+                {clinicaPreferida && resultados.mejorOpcionConClinica && (
+                  <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-3xl shadow-xl p-7 border-4 border-amber-400 shadow-amber-900/20 relative overflow-hidden">
+                    <div className="absolute -right-10 -top-10 text-[180px] opacity-10 rotate-12">🌟</div>
+                    <div className="flex justify-between items-start flex-wrap gap-4 relative z-10">
                       <div>
-                        <h3 className="font-bold text-green-800 text-lg">🎯 Recomendación para {clinicaPreferida}</h3>
-                        <p className="text-3xl font-bold text-green-600">
-                          {resultados.mejorOpcionConClinica.ahorroUF.toFixed(2)} UF/mes
-                        </p>
-                        <p className="text-sm text-green-700 mt-1">
-                          {resultados.mejorOpcionConClinica.nombre}
-                        </p>
-                        <div className="text-xs text-green-600 mt-2">
-                          <span>🏥 Incluye {clinicaPreferida} en red preferente</span>
+                        <div className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-3 border border-amber-400/40">
+                            <span className="text-xs">⭐</span> Recomendación Premium
                         </div>
-                      </div>
-                      <button
-                        onClick={generarPDF}
-                        className="bg-white text-green-700 px-5 py-2 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition"
-                      >
-                        📄 Descargar PDF
-                      </button>
-                    </div>
-                  </div>
-                ) : resultados.mejorOpcionGeneral && (
-                  <div className="bg-green-50 border-l-4 border-green-500 rounded-2xl shadow-xl p-5">
-                    <div className="flex justify-between items-center flex-wrap gap-3">
-                      <div>
-                        <h3 className="font-bold text-green-800 text-lg">🎯 Recomendación (mejor precio)</h3>
-                        <p className="text-3xl font-bold text-green-600">
-                          {resultados.mejorOpcionGeneral.ahorroUF.toFixed(2)} UF/mes
+                        <h3 className="font-black text-3xl tracking-tighter leading-none">{resultados.mejorOpcionConClinica.nombre}</h3>
+                        <p className="text-5xl font-black mt-3.5 tracking-tighter leading-none font-mono">
+                           {resultados.mejorOpcionConClinica.costoUF.toFixed(2)} <span className="text-2xl text-slate-400">UF/mes</span>
                         </p>
-                        <p className="text-sm text-green-700 mt-1">
-                          {resultados.mejorOpcionGeneral.nombre}
+                        
+                        {hayPresupuesto && (resultados.planActualCostoUF - resultados.mejorOpcionConClinica.costoUF) > 0 && (
+                          <div className="inline-flex items-center gap-2 bg-emerald-500 text-white px-4 py-2 rounded-xl text-sm font-extrabold mt-5 shadow-lg shadow-emerald-950/30">
+                            ✅ Ahorro Inteligente: {(resultados.planActualCostoUF - resultados.mejorOpcionConClinica.costoUF).toFixed(2)} UF
+                          </div>
+                        )}
+                        
+                        <p className="text-sm text-slate-300 mt-5 border-t border-slate-700 pt-4 flex items-center gap-2">
+                          <span className="text-lg text-amber-300">🏥</span> <strong>Alto Valor:</strong> Incluye cobertura preferente en <span className="font-bold text-white bg-slate-800 px-1.5 py-0.5 rounded">{clinicaPreferida}</span>.
                         </p>
                       </div>
-                      <button
-                        onClick={generarPDF}
-                        className="bg-white text-green-700 px-5 py-2 rounded-xl text-sm font-semibold shadow-md hover:shadow-lg transition"
-                      >
-                        📄 Descargar PDF
-                      </button>
                     </div>
                   </div>
                 )}
 
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                  <div className="bg-gray-100 px-5 py-4">
-                    <h3 className="font-bold text-gray-800 text-lg">📋 Comparación de planes Colmena</h3>
-                    <p className="text-xs text-gray-500">Ordenados de menor a mayor costo</p>
+                {/* Tabla de Resultados Elegante */}
+                <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+                  {/* CAMBIO CABECERA TABLA: Degradado suave sofisticado */}
+                  <div className="bg-slate-900 bg-gradient-to-r from-slate-950 to-slate-900 px-6 py-5 flex justify-between items-center border-b border-slate-800">
+                    <div>
+                      <h3 className="font-black text-white text-xl tracking-tighter">Propuestas de Valor</h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        {hayPresupuesto ? `Mejores planes optimizados para ${resultados.planActualCostoUF.toFixed(2)} UF` : 'Mejores opciones Colmena encontradas'}
+                      </p>
+                    </div>
+                    {/* CAMBIO BOTÓN PDF: Texto Cyan, borde, más moderno */}
+                    <button 
+                      onClick={generarPDF} 
+                      className="flex items-center gap-1.5 border border-slate-700 text-cyan-400 px-4 py-2 rounded-lg text-xs font-bold hover:bg-slate-800 transition shadow"
+                    >
+                      <span>📄</span> Descargar PDF
+                    </button>
                   </div>
                   
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="p-3 text-left">Plan</th>
-                          <th className="p-3 text-left">Tipo</th>
-                          <th className="p-3 text-left">Parto</th>
-                          <th className="p-3 text-right">Costo UF</th>
-                          <th className="p-3 text-center">Clínica</th>
+                      <thead className="bg-slate-950 text-white/90 border-b border-slate-800">
+                        <tr className="divide-x divide-slate-800">
+                          <th className="p-4 text-left font-bold tracking-tight uppercase text-xs">Plan Propuesto</th>
+                          <th className="p-4 text-right font-bold tracking-tight uppercase text-xs">Costo UF</th>
+                          {hayPresupuesto && <th className="p-4 text-right font-bold tracking-tight uppercase text-xs text-amber-300">Ahorro</th>}
+                          <th className="p-4 text-center font-bold tracking-tight uppercase text-xs">En Red?</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y">
+                      <tbody className="divide-y divide-slate-100">
                         {resultados.topEconomicos?.map((plan: any, idx: number) => {
-                          const esMasBarato = resultados.planActualCostoUF && plan.costoUF < resultados.planActualCostoUF;
+                          const esRecomendado = resultados.mejorOpcionConClinica && plan.nombre === resultados.mejorOpcionConClinica.nombre && plan.incluyeClinicaPreferida;
+                          
+                          let ahorroNum = 0;
+                          if (hayPresupuesto) {
+                            ahorroNum = resultados.planActualCostoUF - plan.costoUF;
+                          }
+
                           return (
-                            <tr key={idx} className="hover:bg-gray-50 transition">
-                              <td className="p-3 font-medium">
-                                {plan.nombre}
-                                {esMasBarato && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">Más barato</span>}
+                            <tr key={idx} className={`hover:bg-slate-50 transition ${esRecomendado ? 'bg-cyan-50' : ''} divide-x divide-slate-100`}>
+                              <td className="p-4 text-slate-800">
+                                <div className="font-extrabold tracking-tight text-slate-950">{plan.nombre}</div>
+                                <div className="text-xs text-slate-500 font-mono mt-0.5">{plan.tipo === 'Grupal' ? 'Cobertura Grupal' : 'Individual PF'}</div>
+                                {esRecomendado && (
+                                  <span className="inline-block mt-1.5 text-[9px] bg-amber-400/20 text-amber-800 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border border-amber-300">
+                                    🌟 Premium
+                                  </span>
+                                )}
                               </td>
-                              <td className="p-3 text-gray-500">
-                                {plan.tipo === 'PF' ? 'Individual' : plan.tipo === 'Grupal' ? 'Grupal' : 'Libre Elección'}
+                              <td className="p-4 text-right font-black text-slate-950 text-base font-mono">
+                                {plan.costoUF.toFixed(2)}
                               </td>
-                              <td className="p-3">{plan.coberturaParto}</td>
-                              <td className="p-3 text-right font-bold text-blue-600">{plan.costoUF.toFixed(2)} UF</td>
-                              <td className="p-3 text-center">
+                              
+                              {hayPresupuesto && (
+                                <td className={`p-4 text-right font-black font-mono text-base ${ahorroNum > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                  {ahorroNum > 0 ? `+${ahorroNum.toFixed(2)}` : ahorroNum.toFixed(2)}
+                                </td>
+                              )}
+
+                              <td className="p-4 text-center">
                                 {clinicaPreferida ? (
                                   plan.incluyeClinicaPreferida ? 
-                                    <span className="text-green-600 text-xs font-semibold">✅ Red Preferente</span> : 
-                                    <span className="text-orange-500 text-xs">⚠️ Libre Elección</span>
+                                    <span className="text-emerald-600 text-xs font-extrabold uppercase bg-emerald-100 px-2 py-1 rounded-lg">SÍ INCLUYE</span> : 
+                                    <span className="text-slate-300 text-xs">-</span>
                                 ) : (
-                                  <span className="text-gray-300 text-xs">-</span>
+                                  <span className="text-slate-300 text-xs">-</span>
                                 )}
                               </td>
                             </tr>
@@ -567,12 +648,24 @@ export default function Home() {
                       </tbody>
                     </table>
                   </div>
+                  
+                  <div className="bg-slate-50 p-5 text-xs text-slate-600 border-t border-slate-100 font-medium">
+                    <p className="flex gap-1.5 items-center"><span className="text-cyan-500">ℹ️</span> Los valores indicados son referenciales e incluyen la prima GES.</p>
+                    <p className="flex gap-1.5 items-center mt-1"><span className="text-cyan-500">ℹ️</span> El ahorro se calcula sobre la diferencia entre el presupuesto base y la propuesta Colmena.</p>
+                  </div>
+                  
                 </div>
               </>
             )}
           </div>
+          
         </div>
       </div>
+
+      <footer className="mt-16 bg-slate-900 border-t-2 border-slate-800 px-6 py-8 text-center text-slate-500 text-xs">
+          <p>© 2026 Asesor Colmena v.Pro - Herramienta Estratégica</p>
+          <p className="mt-1">Diseñado para la Venta de Alto Valor y Beneficios por UF.</p>
+      </footer>
     </div>
   );
 }
